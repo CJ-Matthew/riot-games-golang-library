@@ -190,6 +190,120 @@ func (riotClient RiotClient) GetChampionRotation() (ChampionRotation, error) {
 
 }
 
+// ***************
+// CLASH ENDPOINTS
+// ***************
+
+// Get the registered clash tournaments for a player (saturday and sunday are different tournaments)
+func (riotClient RiotClient) GetClashPlayer(puuid string) ([]ClashPlayer, error) {
+	url := riotClient.regionURL + "/lol/clash/v1/players/by-puuid/" + puuid
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshall the response bodys
+	var clashPlayer []ClashPlayer
+	err = json.Unmarshal(body, &clashPlayer)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return nil, err
+	}
+	
+	return clashPlayer, nil
+}
+
+// Get the clash team details 
+func (riotClient RiotClient) GetClashTeam(teamId int) (ClashTeam, error) {
+	url := riotClient.regionURL + "/lol/clash/v1/teams/" + strconv.Itoa(teamId)
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return ClashTeam{}, err
+	}
+
+	// Unmarshall the response bodys
+	var clashTeam ClashTeam
+	err = json.Unmarshal(body, &clashTeam)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return ClashTeam{}, err
+	}
+	
+	return clashTeam, nil
+}
+
+// Get upcoming tournaments for a region
+func (riotClient RiotClient) GetClashTournaments() ([]ClashTournament, error) {
+	url := riotClient.regionURL + "/lol/clash/v1/tournaments"
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshall the response bodys
+	var clashTournaments []ClashTournament
+	err = json.Unmarshal(body, &clashTournaments)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return nil, err
+	}
+	
+	return clashTournaments, nil
+}
+
+// Get tournament details for a team
+func (riotClient RiotClient) GetClashTeamTournamentDetails(teamId int) (ClashTournament, error) {
+	url := riotClient.regionURL + "/lol/clash/v1/tournaments/by-team/" + strconv.Itoa(teamId)
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return ClashTournament{}, err
+	}
+
+	// Unmarshall the response bodys
+	var clashTeamTournament ClashTournament
+	err = json.Unmarshal(body, &clashTeamTournament)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return ClashTournament{}, err
+	}
+	
+	return clashTeamTournament, nil
+}
+
+// Get tournament deatils
+func (riotClient RiotClient) GetClashTournamentDetails(tournamentId int) (ClashTournament, error) {
+	url := riotClient.regionURL + "/lol/clash/v1/tournaments/" + strconv.Itoa(tournamentId)
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return ClashTournament{}, err
+	}
+
+	// Unmarshall the response bodys
+	var clashTournament ClashTournament
+	err = json.Unmarshal(body, &clashTournament)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return ClashTournament{}, err
+	}
+	
+	return clashTournament, nil
+}
+
 // ****************
 // Helper Functions
 // ****************
@@ -236,11 +350,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	asiaOC1Client := NewRiotClient(os.Getenv("RIOT_KEY"), "asia", "oc1")
-	account, _ := asiaOC1Client.GetAccountByRiotID("CJM", "00000")
+	// account, _ := asiaOC1Client.GetAccountByRiotID("CJM", "00000")
 	// accountRegion, _ := asiaClient.GetAccountRegion(account.PUUID, "lol")\
 	// champMasteries, _ := asiaClient.GetAllChampionMasteries(account.PUUID, 3)
 	// cm, _ := asiaClient.GetChampionMastery("412", account.PUUID)
-	asiaOC1Client.GetMasteryScore(account.PUUID)
-	fmt.Println(asiaOC1Client.GetChampionRotation())
+	fmt.Println(asiaOC1Client.GetClashTournaments())
+	
 
 }

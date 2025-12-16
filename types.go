@@ -47,3 +47,36 @@ type ChampionRotation struct {
     FreeChampionIdsForNewPlayers []int `json:"freeChampionIdsForNewPlayers"`
     FreeChampionIds []int `json:"freeChampionIds"`
 }
+
+type ClashPlayer struct {
+    PUUID    string `json:"puuid"`
+    TeamID    string `json:"teamId"`
+    Position    string `json:"position"`
+    Role    string `json:"role"`
+}
+
+type ClashTeam struct {
+    ID    string `json:"id"`
+    TournamentID    int `json:"tournamentId"`
+    Name    string `json:"name"`
+    IconId    int `json:"iconId"`
+    Tier int `json:"tier"`
+    Captain string `json:"captain"`
+    Abbreviation string `json:"abbreviation"`
+    Players []ClashPlayer `json:"players"`
+}
+
+type ClashTournament struct {
+    ID    int `json:"id"`
+    ThemeID    int `json:"themeId"`
+    NameKey    string `json:"nameKey"`
+    NameKeySecondary    string `json:"nameKeySecondary"`
+    Schedule []ClashTournamentPhase `json:"schedule"`
+}
+
+type ClashTournamentPhase struct {
+    ID    int `json:"id"`
+    RegistrationTime    uint64 `json:"registrationTime"`
+    StartTime uint64 `json:"startTime"`
+    Cancelled bool `json:"cancelled"`
+}
