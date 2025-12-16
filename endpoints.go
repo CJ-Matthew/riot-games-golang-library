@@ -7,88 +7,156 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 // Create new riot client that holds api key and region for querying
-func NewRiotClient(apiKey string, cluster string) *RiotClient {
+func NewRiotClient(apiKey string, cluster string, region string) *RiotClient {
 	clusterURL := "https://" + cluster + ".api.riotgames.com"
+	regionURL := "https://" + region + ".api.riotgames.com"
 
 	
 	return &RiotClient{
 		apiKey:  apiKey,
-		region:  cluster,
+		cluster:  cluster,
+		region: region,
 		clusterURL: clusterURL,
-		regionURL: "",
+		regionURL: regionURL,
 	}
 }
 
 // Riot client data 
 type RiotClient struct {
 	apiKey string
+	cluster string
 	region string
 	clusterURL string
 	regionURL string
 }
 
+// *****************
 // ACCOUNT ENDPOINTS
+// *****************
 
 // Get the PUUID for an riot account using their riot name and tag
-func (riotClient RiotClient) GetPUUID(name string, tag string) (string, error) {
+func (riotClient RiotClient) GetAccountByRiotID(name string, tag string) (Account, error) {
 
 	url := riotClient.clusterURL + "/riot/account/v1/accounts/by-riot-id/" + name + "/" + tag
 
 	body, err := riotClient.sendRequest(url)
 
 	if err != nil {
-		return "", err
-	}
-
-	type Response struct {
-		PUUID    string `json:"puuid"`
-		GameName string `json:"gameName"`
-		TagLine  string `json:"tagLine"`
+		return Account{}, err
 	}
 
 	// Unmarshall the response bodys
-	var response Response
-	err = json.Unmarshal(body, &response)
+	var account Account
+	err = json.Unmarshal(body, &account)
 
 	if err != nil {
 		log.Println("Error unmarshalling response body", err)
-		return "", err
+		return Account{}, err
 	}
 	
-	return response.PUUID, nil
+	return account, nil
 }
 
 // Get the active region for an account
-func (riotClient RiotClient) GetActiveRegion(puuid string, game string) (string , error) {
+func (riotClient RiotClient) GetAccountRegion(puuid string, game string) (AccountRegion , error) {
 	url := riotClient.clusterURL + "/riot/account/v1/region/by-game/" + game + "/by-puuid/" + puuid
 
 	body, err := riotClient.sendRequest(url) 
 
 	if err != nil {
-		return "", err
-	}
-
-	type Response struct {
-		PUUID    string `json:"puuid"`
-		Game string `json:"game"`
-		Region  string `json:"region"`
+		return AccountRegion{}, err
 	}
 
 	// Unmarshall the response bodys
-	var response Response
-	err = json.Unmarshal(body, &response)
+	var accountRegion AccountRegion
+	err = json.Unmarshal(body, &accountRegion)
 
 	if err != nil {
 		log.Println("Error unmarshalling response body", err)
-		return "", err
+		return AccountRegion{}, err
 	} 
 
-	return response.Region, nil
+	return accountRegion, nil
+}
+
+// **************************
+// CHAMPION MASTERY ENDPOINTS
+// **************************
+
+// Returns the champion masteries in decending order. if count is -1 then all masteries returned otherwise the top count are returned
+func (riotClient RiotClient) GetAllChampionMasteries(puuid string, count int) ([]ChampionMastery, error) {
+	var url string
+	if count == -1 {
+		url = riotClient.regionURL + "/lol/champion-mastery/v4/champion-masteries/by-puuid/" + puuid
+	} else {
+		url = riotClient.regionURL + "/lol/champion-mastery/v4/champion-masteries/by-puuid/" + puuid + "/top?count=" + strconv.Itoa(count)
+	}
+	
+	body, err := riotClient.sendRequest(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshall the response bodys
+	var championMasteries []ChampionMastery
+	err = json.Unmarshal(body, &championMasteries)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return nil, err
+	}
+	
+	return championMasteries, nil
+	
+}
+
+// Get mastery details for a specific champion
+func (riotClient RiotClient) GetChampionMastery(championID int, puuid string) (ChampionMastery, error) {
+	url := riotClient.regionURL + "/lol/champion-mastery/v4/champion-masteries/by-puuid/" + puuid + "/by-champion/" + strconv.Itoa(championID)
+	
+	body, err := riotClient.sendRequest(url)
+
+	if err != nil {
+		return ChampionMastery{}, err
+	}
+
+	// Unmarshall the response bodys
+	var champMastery ChampionMastery
+	err = json.Unmarshal(body, &champMastery)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return ChampionMastery{}, err
+	}
+	
+	return champMastery, nil
+}
+
+// Get mastery score for a user
+func (riotClient RiotClient) GetMasteryScore(puuid string) (int, error) {
+	url := riotClient.regionURL + "/lol/champion-mastery/v4/scores/by-puuid/" + puuid
+
+	body, err := riotClient.sendRequest(url)
+
+	if err != nil {
+		return -1, err
+	}
+
+	count, err := strconv.Atoi(string(body))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+
+	return count, nil
 }
 
 
@@ -133,7 +201,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	asiaClient := NewRiotClient(os.Getenv("RIOT_KEY"), "asia")
-	puuid, _ := asiaClient.GetPUUID("CJM", "00000")
-	fmt.Println(asiaClient.GetActiveRegion(puuid, "lol"))
+	asiaOC1Client := NewRiotClient(os.Getenv("RIOT_KEY"), "asia", "oc1")
+	account, _ := asiaOC1Client.GetAccountByRiotID("CJM", "00000")
+	// accountRegion, _ := asiaClient.GetAccountRegion(account.PUUID, "lol")\
+	// champMasteries, _ := asiaClient.GetAllChampionMasteries(account.PUUID, 3)
+	// cm, _ := asiaClient.GetChampionMastery("412", account.PUUID)
+	count, _ := asiaOC1Client.GetMasteryScore(account.PUUID)
+	fmt.Println(count)
+
 }
