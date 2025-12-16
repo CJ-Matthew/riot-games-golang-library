@@ -12,6 +12,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// **************
+// User Interface
+// **************
+
 // Create new riot client that holds api key and region for querying
 func NewRiotClient(apiKey string, cluster string, region string) *RiotClient {
 	clusterURL := "https://" + cluster + ".api.riotgames.com"
@@ -45,7 +49,7 @@ func (riotClient RiotClient) GetAccountByRiotID(name string, tag string) (Accoun
 
 	url := riotClient.clusterURL + "/riot/account/v1/accounts/by-riot-id/" + name + "/" + tag
 
-	body, err := riotClient.sendRequest(url)
+	body, err := riotClient.sendGetRequest(url)
 
 	if err != nil {
 		return Account{}, err
@@ -67,7 +71,7 @@ func (riotClient RiotClient) GetAccountByRiotID(name string, tag string) (Accoun
 func (riotClient RiotClient) GetAccountRegion(puuid string, game string) (AccountRegion , error) {
 	url := riotClient.clusterURL + "/riot/account/v1/region/by-game/" + game + "/by-puuid/" + puuid
 
-	body, err := riotClient.sendRequest(url) 
+	body, err := riotClient.sendGetRequest(url) 
 
 	if err != nil {
 		return AccountRegion{}, err
@@ -98,7 +102,7 @@ func (riotClient RiotClient) GetAllChampionMasteries(puuid string, count int) ([
 		url = riotClient.regionURL + "/lol/champion-mastery/v4/champion-masteries/by-puuid/" + puuid + "/top?count=" + strconv.Itoa(count)
 	}
 	
-	body, err := riotClient.sendRequest(url)
+	body, err := riotClient.sendGetRequest(url)
 
 	if err != nil {
 		return nil, err
@@ -121,7 +125,7 @@ func (riotClient RiotClient) GetAllChampionMasteries(puuid string, count int) ([
 func (riotClient RiotClient) GetChampionMastery(championID int, puuid string) (ChampionMastery, error) {
 	url := riotClient.regionURL + "/lol/champion-mastery/v4/champion-masteries/by-puuid/" + puuid + "/by-champion/" + strconv.Itoa(championID)
 	
-	body, err := riotClient.sendRequest(url)
+	body, err := riotClient.sendGetRequest(url)
 
 	if err != nil {
 		return ChampionMastery{}, err
@@ -143,7 +147,7 @@ func (riotClient RiotClient) GetChampionMastery(championID int, puuid string) (C
 func (riotClient RiotClient) GetMasteryScore(puuid string) (int, error) {
 	url := riotClient.regionURL + "/lol/champion-mastery/v4/scores/by-puuid/" + puuid
 
-	body, err := riotClient.sendRequest(url)
+	body, err := riotClient.sendGetRequest(url)
 
 	if err != nil {
 		return -1, err
@@ -159,8 +163,38 @@ func (riotClient RiotClient) GetMasteryScore(puuid string) (int, error) {
 	return count, nil
 }
 
+// ******************
+// CHAMPION ENDPOINTS
+// ******************
 
-func (riotClient RiotClient) sendRequest(url string) ([]byte, error) {
+// Get the champions on free rotation, low level accounts have different champion rotations
+func (riotClient RiotClient) GetChampionRotation() (ChampionRotation, error) {
+	url := riotClient.regionURL + "/lol/platform/v3/champion-rotations"
+
+	body, err := riotClient.sendGetRequest(url)
+
+	if err != nil {
+		return ChampionRotation{}, err
+	}
+
+	// Unmarshall the response bodys
+	var champRotation ChampionRotation
+	err = json.Unmarshal(body, &champRotation)
+
+	if err != nil {
+		log.Println("Error unmarshalling response body", err)
+		return ChampionRotation{}, err
+	}
+	
+	return champRotation, nil
+
+}
+
+// ****************
+// Helper Functions
+// ****************
+
+func (riotClient RiotClient) sendGetRequest(url string) ([]byte, error) {
 	// Create a new HTTP request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -206,7 +240,7 @@ func main() {
 	// accountRegion, _ := asiaClient.GetAccountRegion(account.PUUID, "lol")\
 	// champMasteries, _ := asiaClient.GetAllChampionMasteries(account.PUUID, 3)
 	// cm, _ := asiaClient.GetChampionMastery("412", account.PUUID)
-	count, _ := asiaOC1Client.GetMasteryScore(account.PUUID)
-	fmt.Println(count)
+	asiaOC1Client.GetMasteryScore(account.PUUID)
+	fmt.Println(asiaOC1Client.GetChampionRotation())
 
 }

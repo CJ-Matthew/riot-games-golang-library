@@ -41,3 +41,9 @@ type RewardConfig struct {
     RewardType    string `json:"rewardType"`
     MaximumReward int    `json:"maximumReward"`
 }
+
+type ChampionRotation struct {
+    MaxNewPlayerLevel int `json:"maxNewPlayerLevel"`
+    FreeChampionIdsForNewPlayers []int `json:"freeChampionIdsForNewPlayers"`
+    FreeChampionIds []int `json:"freeChampionIds"`
+}
